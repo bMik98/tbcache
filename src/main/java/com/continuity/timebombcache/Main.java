@@ -30,7 +30,7 @@ public class Main {
 
     private final Callable<Void> getUserData = () -> {
         Collection<User> users4 = userCache.getData().get();
-        System.out.println(users4.size());
+        LOGGER.info(() -> Thread.currentThread().getName() + " " + users4.size());
         users4.forEach(u -> System.out.println(u.getId() + " " + u.getEmail()));
         getCounter.incrementAndGet();
         return null;
@@ -62,6 +62,15 @@ public class Main {
                 getUserData,
                 getUserData,
 
+                getUserData,
+                getUserData,
+                getUserData,
+                getUserData,
+                getUserData,
+                getUserData,
+                getUserData,
+                getUserData,
+                getUserData,
                 getUserData,
                 getUserData,
                 getUserData,
