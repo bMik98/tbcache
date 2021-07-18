@@ -4,10 +4,11 @@ import com.continuity.timebombcache.model.HasIntegerId;
 
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public interface TimeBombCache<T extends HasIntegerId> {
 
-    CompletableFuture<Collection<T>> getData();
+    Collection<T> getData();
 
-    void clear();
+    void clear() throws ExecutionException, InterruptedException;
 }
