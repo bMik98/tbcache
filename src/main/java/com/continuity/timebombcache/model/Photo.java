@@ -1,6 +1,6 @@
 package com.continuity.timebombcache.model;
 
-public class Photo implements HasId {
+public class Photo implements HasIntegerId {
 
     private int id;
     private int albumId;

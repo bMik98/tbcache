@@ -1,6 +1,6 @@
 package com.continuity.timebombcache.model;
 
-public class Todo implements HasId {
+public class Todo implements HasIntegerId {
 
     private int id;
     private int userId;

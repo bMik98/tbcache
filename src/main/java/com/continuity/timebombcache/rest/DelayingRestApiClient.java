@@ -11,9 +11,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class DelayingRestApiClient<T> implements RestApiClient<T> {
+    private static final Logger LOGGER = Logger.getLogger(DelayingRestApiClient.class.getSimpleName());
 
     private final URL url;
     private final JsonConverter<T> converter;
@@ -41,13 +43,17 @@ public class DelayingRestApiClient<T> implements RestApiClient<T> {
 
     @Override
     public Collection<T> getData() {
+        LOGGER.info(() -> Thread.currentThread().getName() + " gets data from " + url);
         stopper.delay();
         try {
             HttpURLConnection conn = openConnection(url);
             if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
                 throw new RestCallException(conn.getResponseCode(), url);
             }
-            return parseBody(conn);
+            Collection<T> result = parseBody(conn);
+            conn.disconnect();
+            LOGGER.info(() -> Thread.currentThread().getName() + " gets data DONE from " + url);
+            return result;
         } catch (Exception e) {
             throw new RestCallException(e);
         }

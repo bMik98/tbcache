@@ -1,6 +1,6 @@
 package com.continuity.timebombcache.model;
 
-public class Post implements HasId {
+public class Post implements HasIntegerId {
 
     private int id;
     private int userId;

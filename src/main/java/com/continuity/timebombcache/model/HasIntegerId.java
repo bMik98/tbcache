@@ -1,6 +1,6 @@
 package com.continuity.timebombcache.model;
 
-public interface HasId {
+public interface HasIntegerId {
 
     int getId();
 }
