@@ -1,9 +1,9 @@
 package com.continuity.timebombcache;
 
 import com.continuity.timebombcache.cache.TimeBombCache;
-import com.continuity.timebombcache.cache.UserTimeBombCache;
+import com.continuity.timebombcache.cache.impl.UserTimeBombCache;
 import com.continuity.timebombcache.model.User;
-import com.continuity.timebombcache.rest.DelayingRestApiClient;
+import com.continuity.timebombcache.rest.impl.DelayingRestApiClient;
 import com.continuity.timebombcache.util.impl.JacksonJsonConverter;
 import com.continuity.timebombcache.util.impl.RandomDelayStopper;
 
@@ -53,9 +53,9 @@ public class Main {
         }
     }
 
-    private void start() throws ExecutionException, InterruptedException {
+    private void start() throws InterruptedException {
 
-        ExecutorService executorService = Executors.newFixedThreadPool(4);
+        ExecutorService executorService = Executors.newFixedThreadPool(6);
 
         List<Callable<Void>> tasks = Arrays.asList(
                 getUserData,
@@ -95,6 +95,8 @@ public class Main {
                 getUserData,
                 clearUserCache,
                 clearUserCache,
+                getUserData,
+
                 clearUserCache,
                 clearUserCache,
                 clearUserCache,
@@ -103,7 +105,7 @@ public class Main {
                 getUserData,
                 clearUserCache
 
-                );
+        );
 
         executorService.invokeAll(tasks);
 

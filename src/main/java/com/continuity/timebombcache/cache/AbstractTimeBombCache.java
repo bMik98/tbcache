@@ -4,7 +4,11 @@ import com.continuity.timebombcache.model.HasIntegerId;
 import com.continuity.timebombcache.rest.RestApiClient;
 
 import java.util.Collection;
-import java.util.concurrent.*;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
@@ -12,26 +16,40 @@ public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements T
     private static final Logger LOGGER = Logger.getLogger(AbstractTimeBombCache.class.getSimpleName());
 
     private final RestApiClient<T> apiClient;
-    private final ScheduledExecutorService selfCleanService = Executors.newSingleThreadScheduledExecutor();
+    private final long ttlInMillis;
+
+    private final AtomicReference<Timer> timer = new AtomicReference<>();
     private final AtomicReference<Future<Collection<T>>> updater = new AtomicReference<>();
+    private final AtomicReference<Collection<T>> cache = new AtomicReference<>();
 
     protected AbstractTimeBombCache(RestApiClient<T> apiClient, int ttlInSeconds) {
         this.apiClient = apiClient;
-        selfCleanService.scheduleAtFixedRate(this::clear, 0, ttlInSeconds, TimeUnit.SECONDS);
+        this.ttlInMillis = ttlInSeconds * 1000L;
     }
 
     @Override
     public Collection<T> getData() {
         while (true) {
-            FutureTask<Collection<T>> ft = new FutureTask<>(apiClient::getData);
+            Collection<T> existing = cache.get();
+            if (existing != null) {
+                return existing;
+            }
+            FutureTask<Collection<T>> ft = new FutureTask<>(() -> {
+                Collection<T> data = apiClient.getData();
+                cache.set(data);
+                setTimer();
+                return data;
+            });
             if (updater.compareAndSet(null, ft)) {
                 LOGGER.info(() -> Thread.currentThread().getName() + " run update");
                 ft.run();
             }
             try {
                 Collection<T> res = updater.get().get();
-                LOGGER.info(() -> Thread.currentThread().getName() + " got result of size = " + res.size());
-                return res;
+                if (res != null) {
+                    LOGGER.info(() -> Thread.currentThread().getName() + " got result of size = " + res.size());
+                    return res;
+                }
             } catch (ExecutionException e) {
                 LOGGER.severe(() -> Thread.currentThread().getName() + " " + e.getCause().getMessage());
                 updater.set(null);
@@ -45,7 +63,7 @@ public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements T
 
     @Override
     public void clear() {
-        if (updater.get() == null) {
+        if (updater.get() == null || cache.get() == null) {
             LOGGER.info(() -> Thread.currentThread().getName() + " clear skipped - cache is empty");
             return;
         } else {
@@ -54,6 +72,8 @@ public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements T
         }
         LOGGER.info(() -> Thread.currentThread().getName() + " clear");
         updater.set(null);
+        cache.set(null);
+        cancelTimer();
     }
 
     private Collection<T> get() {
@@ -70,5 +90,26 @@ public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements T
             Thread.currentThread().interrupt();
         }
         return null;
+    }
+
+    private void setTimer() {
+        Timer newTimer = new Timer("self-clear");
+        cancelTimer();
+        timer.set(newTimer);
+        newTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                clear();
+            }
+        }, ttlInMillis);
+    }
+
+    private void cancelTimer() {
+        Timer currentTimer = timer.get();
+        if (currentTimer != null) {
+            currentTimer.cancel();
+            currentTimer.purge();
+        }
+        timer.set(null);
     }
 }
