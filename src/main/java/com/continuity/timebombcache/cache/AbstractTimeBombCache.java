@@ -4,7 +4,6 @@ import com.continuity.timebombcache.model.HasIntegerId;
 import com.continuity.timebombcache.rest.RestApiClient;
 
 import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -16,7 +15,6 @@ public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements T
 
     private final RestApiClient<T> apiClient;
     private final AtomicReference<Future<Collection<T>>> updater = new AtomicReference<>();
-    private final AtomicReference<Collection<T>> cache = new AtomicReference<>();
 
     protected AbstractTimeBombCache(RestApiClient<T> apiClient) {
         this.apiClient = apiClient;
@@ -56,15 +54,5 @@ public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements T
         }
         LOGGER.info(() -> Thread.currentThread().getName() + " clear");
         updater.set(null);
-    }
-
-    private CompletableFuture<Collection<T>> update() {
-        return CompletableFuture.supplyAsync(() -> {
-//            updateInProgress.set(true);
-            LOGGER.info(Thread.currentThread().getName() + " starts update");
-            Collection<T> result = apiClient.getData();
-//            updateInProgress.set(false);
-            return result;
-        });
     }
 }
