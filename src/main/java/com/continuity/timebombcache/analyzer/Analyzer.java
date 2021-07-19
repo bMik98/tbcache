@@ -1,10 +1,11 @@
 package com.continuity.timebombcache.analyzer;
 
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
 
 public interface Analyzer {
 
-    Collection<String> uncompletedUserTasks();
+    CompletableFuture<Collection<String>> uncompletedUserTasks();
 
     Collection<String> uncompletedUserTasks(int userId);
 
