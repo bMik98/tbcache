@@ -5,11 +5,11 @@ import java.util.concurrent.CompletableFuture;
 
 public interface Analyzer {
 
-    CompletableFuture<Collection<String>> uncompletedUserTasks();
+    CompletableFuture<Collection<String>> uncompletedTasks();
 
-    Collection<String> uncompletedUserTasks(int userId);
+    CompletableFuture<Collection<String>>  uncompletedUserTasks(int userId);
 
-    Collection<String> userPostReplies();
+    CompletableFuture<Collection<String>>  userPostReplies();
 
-    Collection<String> userAlbums(int userId, int albumPhotosThreshold);
+    CompletableFuture<Collection<String>>  userAlbums(int userId, int albumPhotosThreshold);
 }
