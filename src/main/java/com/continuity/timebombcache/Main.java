@@ -24,19 +24,20 @@ public class Main {
     private final DelayingRestApiClient<User> userClient = new DelayingRestApiClient<>(
             new URL("https://jsonplaceholder.typicode.com/users"),
             new JacksonJsonConverter<>(User.class),
-            new RandomDelayStopper(5, 20));
+            new RandomDelayStopper(2, 6));
 
     private final TimeBombCache<User> userCache = new UserTimeBombCache(userClient);
 
     private final Callable<Void> getUserData = () -> {
-        Collection<User> users4 = userCache.getData().get();
+        Collection<User> users4 = userCache.getData();
         LOGGER.info(() -> Thread.currentThread().getName() + " " + users4.size());
-        users4.forEach(u -> System.out.println(u.getId() + " " + u.getEmail()));
+//        users4.forEach(u -> System.out.println(u.getId() + " " + u.getEmail()));
         getCounter.incrementAndGet();
         return null;
     };
 
     private final Callable<Void> clearUserCache = () -> {
+        TimeUnit.SECONDS.sleep(1);
         userCache.clear();
         return null;
     };
@@ -54,36 +55,76 @@ public class Main {
 
     private void start() throws ExecutionException, InterruptedException {
 
-        ExecutorService executorService = Executors.newFixedThreadPool(20);
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
 
         List<Callable<Void>> tasks = Arrays.asList(
                 getUserData,
+                clearUserCache,
+                getUserData,
+                getUserData,
+                clearUserCache,
+                getUserData,
+                clearUserCache,
+                getUserData,
+                clearUserCache,
+                getUserData,
+                clearUserCache,
+                getUserData,
+                clearUserCache,
+                getUserData,
+                clearUserCache,
+                getUserData,
+                clearUserCache,
+                getUserData,
+                clearUserCache,
+                clearUserCache,
+                clearUserCache,
                 getUserData,
                 getUserData,
                 getUserData,
+                clearUserCache,
+                getUserData,
+                clearUserCache,
+                getUserData,
+                clearUserCache,
+                getUserData,
+                getUserData,
+                getUserData,
+                getUserData,
+                getUserData,
+                getUserData,
+                clearUserCache,
+                clearUserCache,
+                clearUserCache,
+                clearUserCache,
+                clearUserCache,
+                clearUserCache,
+                getUserData,
+                getUserData,
+                clearUserCache
 
-                getUserData,
-                getUserData,
-                getUserData,
-                getUserData,
-                getUserData,
-                getUserData,
-                getUserData,
-                getUserData,
-                getUserData,
-                getUserData,
-                getUserData,
-                getUserData,
-                getUserData,
-                getUserData
-        );
+                );
 
         executorService.invokeAll(tasks);
 
         executorService.shutdown();
-        executorService.awaitTermination(120, TimeUnit.SECONDS);
+        executorService.awaitTermination(320, TimeUnit.SECONDS);
 
         System.out.println("Gets : " + getCounter.get());
+
+
+        ExecutorService e2 = Executors.newSingleThreadExecutor();
+        e2.submit(getUserData);
+        e2.submit(getUserData);
+        e2.submit(getUserData);
+        e2.submit(clearUserCache);
+        e2.submit(getUserData);
+        e2.submit(getUserData);
+        e2.submit(getUserData);
+        e2.submit(clearUserCache);
+
+        e2.shutdown();
+        e2.awaitTermination(120, TimeUnit.SECONDS);
     }
 
 }
