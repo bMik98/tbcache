@@ -53,9 +53,9 @@ public class Main {
         }
     }
 
-    private void start() throws ExecutionException, InterruptedException {
+    private void start() throws InterruptedException {
 
-        ExecutorService executorService = Executors.newFixedThreadPool(4);
+        ExecutorService executorService = Executors.newFixedThreadPool(6);
 
         List<Callable<Void>> tasks = Arrays.asList(
                 getUserData,
@@ -95,6 +95,8 @@ public class Main {
                 getUserData,
                 clearUserCache,
                 clearUserCache,
+                getUserData,
+
                 clearUserCache,
                 clearUserCache,
                 clearUserCache,
@@ -103,7 +105,7 @@ public class Main {
                 getUserData,
                 clearUserCache
 
-                );
+        );
 
         executorService.invokeAll(tasks);
 
