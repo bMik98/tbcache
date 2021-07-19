@@ -2,56 +2,65 @@ package com.continuity.timebombcache.analyzer.impl;
 
 import com.continuity.timebombcache.analyzer.Analyzer;
 import com.continuity.timebombcache.cache.TimeBombCache;
-import com.continuity.timebombcache.model.Todo;
+import com.continuity.timebombcache.model.*;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.concurrent.ExecutionException;
 
 public class SimpleAnalyzer implements Analyzer {
 
-    private static final Function<Map.Entry<Integer, Integer>, String> userTodosToString = entry ->
-            "User " + entry.getKey() + " has " + entry.getValue() + " incomplete tasks";
+    private final TodoAnalyzer todoAnalyzer;
+    private final PostAnalyzer postAnalyzer;
 
-    private static final Function<Todo, String> todoToString = todo ->
-            "Todo #" + todo.getId() + " " + todo.getTitle();
-
-    private final TimeBombCache<Todo> todoCache;
-
-    public SimpleAnalyzer(TimeBombCache<Todo> todoCache) {
-        this.todoCache = todoCache;
+    public SimpleAnalyzer(
+            TimeBombCache<Album> albumCache,
+            TimeBombCache<Comment> commentCache,
+            TimeBombCache<Photo> photoCache,
+            TimeBombCache<Post> postCache,
+            TimeBombCache<Todo> todoCache,
+            TimeBombCache<User> userCache) {
+        todoAnalyzer = new TodoAnalyzer(todoCache);
+        postAnalyzer = new PostAnalyzer(commentCache, postCache);
     }
 
     @Override
-    public CompletableFuture<Collection<String>> uncompletedTasks() {
-        return CompletableFuture.supplyAsync(todoCache::getData)
-                .thenApply(data -> data.stream()
-                        .filter(todo -> !todo.isCompleted())
-                        .collect(Collectors.toMap(Todo::getUserId, todo -> 1, Integer::sum)))
-                .thenApply(map -> map.entrySet().stream()
-                        .map(userTodosToString)
-                        .collect(Collectors.toList()));
+    public Collection<String> uncompletedTasks() {
+        try {
+            return todoAnalyzer.uncompletedTasks().get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        throw new RuntimeException();
     }
 
     @Override
-    public CompletableFuture<Collection<String>> uncompletedUserTasks(int userId) {
-        return CompletableFuture.supplyAsync(todoCache::getData)
-                .thenApply(data -> data.stream()
-                        .filter(todo -> todo.getUserId() == userId)
-                        .filter(todo -> !todo.isCompleted())
-                        .map(todoToString)
-                        .collect(Collectors.toList()));
+    public Collection<String> uncompletedUserTasks(int userId) {
+        try {
+            return todoAnalyzer.uncompletedUserTasks(userId).get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        throw new RuntimeException();
     }
 
     @Override
-    public CompletableFuture<Collection<String>> userPostReplies() {
-        return null;
+    public Collection<String> userPostReplies() {
+        try {
+            return postAnalyzer.userPostReplies().get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        throw new RuntimeException();
     }
 
     @Override
-    public CompletableFuture<Collection<String>> userAlbums(int userId, int albumPhotosThreshold) {
+    public Collection<String> userAlbums(int userId, int albumPhotosThreshold) {
         return null;
     }
 }

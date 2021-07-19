@@ -1,15 +1,14 @@
 package com.continuity.timebombcache.analyzer;
 
 import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
 
 public interface Analyzer {
 
-    CompletableFuture<Collection<String>> uncompletedTasks();
+    Collection<String> uncompletedTasks();
 
-    CompletableFuture<Collection<String>>  uncompletedUserTasks(int userId);
+    Collection<String> uncompletedUserTasks(int userId);
 
-    CompletableFuture<Collection<String>>  userPostReplies();
+    Collection<String> userPostReplies();
 
-    CompletableFuture<Collection<String>>  userAlbums(int userId, int albumPhotosThreshold);
+    Collection<String> userAlbums(int userId, int albumPhotosThreshold);
 }
