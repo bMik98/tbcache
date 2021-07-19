@@ -5,7 +5,7 @@ import com.continuity.timebombcache.rest.RestApiClient;
 
 public class UserTimeBombCache extends AbstractTimeBombCache<User> {
 
-    public UserTimeBombCache(RestApiClient<User> apiClient) {
-        super(apiClient);
+    public UserTimeBombCache(RestApiClient<User> apiClient, int ttlInSeconds) {
+        super(apiClient, ttlInSeconds);
     }
 }

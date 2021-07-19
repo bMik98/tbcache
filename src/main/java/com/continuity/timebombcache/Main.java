@@ -26,7 +26,7 @@ public class Main {
             new JacksonJsonConverter<>(User.class),
             new RandomDelayStopper(2, 6));
 
-    private final TimeBombCache<User> userCache = new UserTimeBombCache(userClient);
+    private final TimeBombCache<User> userCache = new UserTimeBombCache(userClient, 5);
 
     private final Callable<Void> getUserData = () -> {
         Collection<User> users4 = userCache.getData();
