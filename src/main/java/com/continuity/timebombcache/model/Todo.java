@@ -5,7 +5,7 @@ public class Todo implements HasIntegerId {
     private int id;
     private int userId;
     private String title;
-    private Boolean completed;
+    private boolean completed;
 
     public Todo() {
     }
@@ -35,11 +35,11 @@ public class Todo implements HasIntegerId {
         this.title = title;
     }
 
-    public Boolean getCompleted() {
+    public boolean isCompleted() {
         return completed;
     }
 
-    public void setCompleted(Boolean completed) {
+    public void setCompleted(boolean completed) {
         this.completed = completed;
     }
 }

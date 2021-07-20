@@ -1,5 +1,7 @@
-package com.continuity.timebombcache.rest;
+package com.continuity.timebombcache.rest.impl;
 
+import com.continuity.timebombcache.rest.RestApiClient;
+import com.continuity.timebombcache.rest.RestCallException;
 import com.continuity.timebombcache.util.ConversionException;
 import com.continuity.timebombcache.util.JsonConverter;
 import com.continuity.timebombcache.util.Stopper;
@@ -54,7 +56,7 @@ public class DelayingRestApiClient<T> implements RestApiClient<T> {
             conn.disconnect();
             LOGGER.info(() -> Thread.currentThread().getName() + " gets data DONE from " + url);
             return result;
-        } catch (Exception e) {
+        } catch (IOException | ConversionException e) {
             throw new RestCallException(e);
         }
     }

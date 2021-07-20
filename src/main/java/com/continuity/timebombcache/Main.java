@@ -1,9 +1,12 @@
 package com.continuity.timebombcache;
 
+import com.continuity.timebombcache.analyzer.Analyzer;
+import com.continuity.timebombcache.analyzer.impl.AnalyzerImpl;
 import com.continuity.timebombcache.cache.TimeBombCache;
-import com.continuity.timebombcache.cache.UserTimeBombCache;
-import com.continuity.timebombcache.model.User;
-import com.continuity.timebombcache.rest.DelayingRestApiClient;
+import com.continuity.timebombcache.cache.impl.*;
+import com.continuity.timebombcache.model.*;
+import com.continuity.timebombcache.rest.impl.DelayingRestApiClient;
+import com.continuity.timebombcache.util.Stopper;
 import com.continuity.timebombcache.util.impl.JacksonJsonConverter;
 import com.continuity.timebombcache.util.impl.RandomDelayStopper;
 
@@ -12,25 +15,62 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 public class Main {
     private static final Logger LOGGER = Logger.getLogger(Main.class.getSimpleName());
 
-    private final AtomicInteger getCounter = new AtomicInteger(0);
+    private static final int TTL_IN_SECONDS = 5;
+    private static final int MIN_DELAY = 2;
+    private static final int MAX_DELAY = 6;
+    private static final Stopper apiDelayStopper = new RandomDelayStopper(MIN_DELAY, MAX_DELAY);
 
+    private final DelayingRestApiClient<Album> albumClient = new DelayingRestApiClient<>(
+            new URL("https://jsonplaceholder.typicode.com/albums"),
+            new JacksonJsonConverter<>(Album.class),
+            apiDelayStopper);
+    private final DelayingRestApiClient<Comment> commentClient = new DelayingRestApiClient<>(
+            new URL("https://jsonplaceholder.typicode.com/comments"),
+            new JacksonJsonConverter<>(Comment.class),
+            apiDelayStopper);
+    private final DelayingRestApiClient<Photo> photoClient = new DelayingRestApiClient<>(
+            new URL("https://jsonplaceholder.typicode.com/photos"),
+            new JacksonJsonConverter<>(Photo.class),
+            apiDelayStopper);
+    private final DelayingRestApiClient<Post> postClient = new DelayingRestApiClient<>(
+            new URL("https://jsonplaceholder.typicode.com/posts"),
+            new JacksonJsonConverter<>(Post.class),
+            apiDelayStopper);
+    private final DelayingRestApiClient<Todo> todoClient = new DelayingRestApiClient<>(
+            new URL("https://jsonplaceholder.typicode.com/todos"),
+            new JacksonJsonConverter<>(Todo.class),
+            apiDelayStopper);
     private final DelayingRestApiClient<User> userClient = new DelayingRestApiClient<>(
             new URL("https://jsonplaceholder.typicode.com/users"),
             new JacksonJsonConverter<>(User.class),
-            new RandomDelayStopper(2, 6));
+            apiDelayStopper);
 
-    private final TimeBombCache<User> userCache = new UserTimeBombCache(userClient, 5);
+    private final TimeBombCache<Album> albumCache = new AlbumTimeBombCache(albumClient, TTL_IN_SECONDS);
+    private final TimeBombCache<Comment> commentCache = new CommentTimeBombCache(commentClient, TTL_IN_SECONDS);
+    private final TimeBombCache<Photo> photoCache = new PhotoTimeBombCache(photoClient, TTL_IN_SECONDS);
+    private final TimeBombCache<Post> postCache = new PostTimeBombCache(postClient, TTL_IN_SECONDS);
+    private final TimeBombCache<Todo> todoCache = new TodoTimeBombCache(todoClient, TTL_IN_SECONDS);
+    private final TimeBombCache<User> userCache = new UserTimeBombCache(userClient, TTL_IN_SECONDS);
+
+    private final Analyzer analyzer = new AnalyzerImpl(
+            albumCache, commentCache, photoCache, postCache, todoCache, userCache);
+
+    private final AtomicInteger getCounter = new AtomicInteger(0);
+    private final AtomicInteger todoCounter = new AtomicInteger(0);
 
     private final Callable<Void> getUserData = () -> {
-        Collection<User> users4 = userCache.getData();
-        LOGGER.info(() -> Thread.currentThread().getName() + " " + users4.size());
+        Collection<User> users = userCache.getData();
+        LOGGER.info(() -> Thread.currentThread().getName() + " " + users.size());
 //        users4.forEach(u -> System.out.println(u.getId() + " " + u.getEmail()));
         getCounter.incrementAndGet();
         return null;
@@ -47,10 +87,45 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            new Main().start();
+//            new Main().start();
+//            new Main().testTodoAnalyze();
+//            new Main().testPostCommentsAnalyze();
+            new Main().testAlbumAnalyze();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void testTodoAnalyze() {
+        System.out.println("--------------------------------");
+        analyzer.uncompletedTasks().forEach(System.out::println);
+        System.out.println("--------------------------------");
+        analyzer.uncompletedTasks().forEach(System.out::println);
+        System.out.println("--------------------------------");
+        analyzer.uncompletedTasks().forEach(System.out::println);
+        System.out.println("--------------------------------");
+        analyzer.uncompletedUserTasks(4).forEach(System.out::println);
+        System.out.println("--------------------------------");
+    }
+
+    private void testPostCommentsAnalyze() {
+        System.out.println("--------------------------------");
+        analyzer.userPostReplies().forEach(System.out::println);
+        System.out.println("--------------------------------");
+        analyzer.userPostReplies().forEach(System.out::println);
+        System.out.println("--------------------------------");
+        analyzer.userPostReplies().forEach(System.out::println);
+        System.out.println("--------------------------------");
+    }
+
+    private void testAlbumAnalyze() {
+        System.out.println("--------------------------------");
+        analyzer.userAlbums(1, 0).forEach(System.out::println);
+        System.out.println("--------------------------------");
+        analyzer.userAlbums(2, 60).forEach(System.out::println);
+        System.out.println("--------------------------------");
+        analyzer.userAlbums(3, 0).forEach(System.out::println);
+        System.out.println("--------------------------------");
     }
 
     private void start() throws InterruptedException {
