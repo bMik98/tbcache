@@ -1,7 +1,10 @@
 package com.continuity.timebombcache.cache;
 
+import com.continuity.timebombcache.model.AppEvent;
 import com.continuity.timebombcache.model.HasIntegerId;
+import com.continuity.timebombcache.model.entity.AppEventType;
 import com.continuity.timebombcache.rest.RestApiClient;
+import com.continuity.timebombcache.service.AppEventManager;
 
 import java.util.Collection;
 import java.util.Timer;
@@ -22,9 +25,10 @@ public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements T
     private final AtomicReference<Future<Collection<T>>> updater = new AtomicReference<>();
     private final AtomicReference<Collection<T>> cache = new AtomicReference<>();
 
-    protected AbstractTimeBombCache(RestApiClient<T> apiClient, int ttlInSeconds) {
+    protected AbstractTimeBombCache(RestApiClient<T> apiClient, int ttlInSeconds, AppEventManager eventManager) {
         this.apiClient = apiClient;
         this.ttlInMillis = ttlInSeconds * 1000L;
+        eventManager.addEventListener(this);
     }
 
     @Override
@@ -74,6 +78,13 @@ public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements T
         updater.set(null);
         cache.set(null);
         cancelTimer();
+    }
+
+    @Override
+    public void handleEvent(AppEvent event) {
+        if (event.getType() == AppEventType.CLEAR_CACHE) {
+            clear();
+        }
     }
 
     private Collection<T> get() {
