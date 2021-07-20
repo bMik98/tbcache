@@ -28,12 +28,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 public class Main {
-    private static final Logger LOGGER = Logger.getLogger(Main.class.getSimpleName());
 
+    private static final Logger LOGGER = Logger.getLogger(Main.class.getSimpleName());
     private static final int TTL_IN_SECS = 5;
     private static final int MIN_DELAY = 2;
     private static final int MAX_DELAY = 6;
     private static final Stopper apiDelayStopper = new RandomDelayStopper(MIN_DELAY, MAX_DELAY);
+
+    static {
+        System.setProperty("java.util.logging.SimpleFormatter.format",
+                "%1$tF %1$tT %4$s %2$s %5$s%6$s%n");
+    }
 
     private final EventManager eventManager = new EventManager(1, 5);
 
@@ -152,7 +157,6 @@ public class Main {
         cleanService.startCyclicClean();
         new FixedDelayStopper(10).delay();
         cleanService.shutdown();
-
     }
 
     private void testEventManager() {
@@ -176,6 +180,7 @@ public class Main {
                 clearUserCache,
                 getUserData,
                 getUserData,
+                getUserData,
                 clearUserCache,
                 getUserData,
                 clearUserCache,
@@ -217,8 +222,8 @@ public class Main {
                 clearUserCache,
                 getUserData,
                 getUserData,
-                clearUserCache
-
+                clearUserCache,
+                getUserData
         );
 
         executorService.invokeAll(tasks);

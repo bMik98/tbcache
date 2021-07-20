@@ -12,6 +12,7 @@ import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
@@ -23,7 +24,7 @@ public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements T
 
     private final AtomicReference<Timer> timer = new AtomicReference<>();
     private final AtomicReference<Future<Collection<T>>> updater = new AtomicReference<>();
-    private final AtomicReference<Collection<T>> cache = new AtomicReference<>();
+    private final AtomicBoolean clearInProgress = new AtomicBoolean(false);
 
     protected AbstractTimeBombCache(RestApiClient<T> apiClient, int ttlInSeconds, AppEventManager eventManager) {
         this.apiClient = apiClient;
@@ -34,13 +35,8 @@ public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements T
     @Override
     public Collection<T> getData() {
         while (true) {
-            Collection<T> existing = cache.get();
-            if (existing != null) {
-                return existing;
-            }
             FutureTask<Collection<T>> ft = new FutureTask<>(() -> {
                 Collection<T> data = apiClient.getData();
-                cache.set(data);
                 setTimer();
                 return data;
             });
@@ -48,36 +44,51 @@ public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements T
                 LOGGER.info(() -> Thread.currentThread().getName() + " run update");
                 ft.run();
             }
-            try {
-                Collection<T> res = updater.get().get();
-                if (res != null) {
-                    LOGGER.info(() -> Thread.currentThread().getName() + " got result of size = " + res.size());
-                    return res;
+            Future<Collection<T>> future = updater.get();
+            if (future != null) {
+                try {
+                    Collection<T> res = future.get();
+                    if (res != null) {
+                        LOGGER.info(() -> Thread.currentThread().getName() + " got result of size = " + res.size());
+                        return res;
+                    }
+                } catch (ExecutionException e) {
+                    LOGGER.severe(() -> Thread.currentThread().getName() + " " + e.getCause().getMessage());
+                    updater.set(null);
+                } catch (InterruptedException e) {
+                    LOGGER.severe(() -> Thread.currentThread().getName() + " was interrupted when data receiving");
+                    updater.set(null);
+                    Thread.currentThread().interrupt();
                 }
-            } catch (ExecutionException e) {
-                LOGGER.severe(() -> Thread.currentThread().getName() + " " + e.getCause().getMessage());
-                updater.set(null);
-            } catch (InterruptedException e) {
-                LOGGER.severe(() -> Thread.currentThread().getName() + " was interrupted when receiving data");
-                updater.set(null);
-                Thread.currentThread().interrupt();
             }
         }
     }
 
     @Override
     public void clear() {
-        if (updater.get() == null || cache.get() == null) {
+        Future<Collection<T>> future = updater.get();
+        if (future == null) {
             LOGGER.info(() -> Thread.currentThread().getName() + " clear skipped - cache is empty");
             return;
-        } else {
-            LOGGER.info(() -> Thread.currentThread().getName() + " clear is waiting for running update");
-            get();
         }
-        LOGGER.info(() -> Thread.currentThread().getName() + " clear");
-        updater.set(null);
-        cache.set(null);
-        cancelTimer();
+        if (clearInProgress.compareAndSet(false, true)) {
+            cancelTimer();
+            try {
+                LOGGER.info(() -> Thread.currentThread().getName() + " clear is waiting for running update");
+                future.get();
+            } catch (ExecutionException e) {
+                LOGGER.severe(() -> Thread.currentThread().getName() + " " + e.getCause().getMessage());
+            } catch (InterruptedException e) {
+                LOGGER.severe(() -> Thread.currentThread().getName() + " clear was interrupted");
+                Thread.currentThread().interrupt();
+            } finally {
+                updater.set(null);
+                clearInProgress.set(false);
+                LOGGER.info(() -> Thread.currentThread().getName() + " clear done");
+            }
+        } else {
+            LOGGER.info(() -> Thread.currentThread().getName() + " clear already in progress");
+        }
     }
 
     @Override
@@ -87,40 +98,23 @@ public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements T
         }
     }
 
-    private Collection<T> get() {
-        try {
-            Collection<T> res = updater.get().get();
-            LOGGER.info(() -> Thread.currentThread().getName() + " got result of size = " + res.size());
-            return res;
-        } catch (ExecutionException e) {
-            LOGGER.severe(() -> Thread.currentThread().getName() + " " + e.getCause().getMessage());
-            updater.set(null);
-        } catch (InterruptedException e) {
-            LOGGER.severe(() -> Thread.currentThread().getName() + " was interrupted when receiving data");
-            updater.set(null);
-            Thread.currentThread().interrupt();
-        }
-        return null;
-    }
-
     private void setTimer() {
-        Timer newTimer = new Timer("self-clear");
         cancelTimer();
-        timer.set(newTimer);
+        Timer newTimer = new Timer("self-clear");
         newTimer.schedule(new TimerTask() {
             @Override
             public void run() {
                 clear();
             }
         }, ttlInMillis);
+        timer.set(newTimer);
     }
 
     private void cancelTimer() {
-        Timer currentTimer = timer.get();
+        Timer currentTimer = timer.getAndSet(null);
         if (currentTimer != null) {
             currentTimer.cancel();
             currentTimer.purge();
         }
-        timer.set(null);
     }
 }
