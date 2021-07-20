@@ -2,7 +2,7 @@ package com.continuity.timebombcache.service;
 
 public interface CyclicService {
 
-    void startCyclicClean();
+    void startCyclicTask();
 
     void shutdown();
 

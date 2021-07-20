@@ -1,8 +1,6 @@
 package com.continuity.timebombcache.model.entity;
 
-import com.continuity.timebombcache.model.HasIntegerId;
-
-public class Todo implements HasIntegerId {
+public class Todo {
 
     private int id;
     private int userId;
@@ -12,7 +10,6 @@ public class Todo implements HasIntegerId {
     public Todo() {
     }
 
-    @Override
     public int getId() {
         return id;
     }

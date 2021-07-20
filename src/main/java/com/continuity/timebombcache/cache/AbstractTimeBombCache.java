@@ -1,8 +1,7 @@
 package com.continuity.timebombcache.cache;
 
 import com.continuity.timebombcache.model.AppEvent;
-import com.continuity.timebombcache.model.HasIntegerId;
-import com.continuity.timebombcache.model.entity.AppEventType;
+import com.continuity.timebombcache.model.AppEventType;
 import com.continuity.timebombcache.rest.RestApiClient;
 import com.continuity.timebombcache.service.AppEventManager;
 
@@ -16,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
-public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements TimeBombCache<T> {
+public abstract class AbstractTimeBombCache<T> implements TimeBombCache<T> {
     private static final Logger LOGGER = Logger.getLogger(AbstractTimeBombCache.class.getSimpleName());
 
     private final RestApiClient<T> apiClient;
@@ -66,13 +65,13 @@ public abstract class AbstractTimeBombCache<T extends HasIntegerId> implements T
 
     @Override
     public void clear() {
+        cancelTimer();
         Future<Collection<T>> future = updater.get();
         if (future == null) {
             LOGGER.info(() -> Thread.currentThread().getName() + " clear skipped - cache is empty");
             return;
         }
         if (clearInProgress.compareAndSet(false, true)) {
-            cancelTimer();
             try {
                 LOGGER.info(() -> Thread.currentThread().getName() + " clear is waiting for running update");
                 future.get();

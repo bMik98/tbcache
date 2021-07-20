@@ -1,8 +1,6 @@
 package com.continuity.timebombcache.model.entity;
 
-import com.continuity.timebombcache.model.HasIntegerId;
-
-public class User implements HasIntegerId {
+public class User {
 
     private int id;
     private String name;

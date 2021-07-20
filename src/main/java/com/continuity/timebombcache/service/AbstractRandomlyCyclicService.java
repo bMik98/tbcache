@@ -18,7 +18,7 @@ public abstract class AbstractRandomlyCyclicService implements CyclicService {
     }
 
     @Override
-    public void startCyclicClean() {
+    public void startCyclicTask() {
         if (executorService.compareAndSet(null, Executors.newSingleThreadScheduledExecutor())) {
             ScheduledExecutorService executor = executorService.get();
             if (executor != null) {

@@ -1,8 +1,6 @@
 package com.continuity.timebombcache.model.entity;
 
-import com.continuity.timebombcache.model.HasIntegerId;
-
-public class Post implements HasIntegerId {
+public class Post {
 
     private int id;
     private int userId;
@@ -12,7 +10,6 @@ public class Post implements HasIntegerId {
     public Post() {
     }
 
-    @Override
     public int getId() {
         return id;
     }
