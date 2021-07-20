@@ -1,8 +1,8 @@
 package com.continuity.timebombcache.analyzer.impl;
 
-import com.continuity.timebombcache.cache.TimeBombCache;
-import com.continuity.timebombcache.model.Album;
-import com.continuity.timebombcache.model.Photo;
+import com.continuity.timebombcache.model.DataGetter;
+import com.continuity.timebombcache.model.entity.Album;
+import com.continuity.timebombcache.model.entity.Photo;
 
 import java.util.Collection;
 import java.util.Map;
@@ -11,12 +11,12 @@ import java.util.stream.Collectors;
 
 public class AlbumAnalyzer {
 
-    private final TimeBombCache<Album> albumCache;
-    private final TimeBombCache<Photo> photoCache;
+    private final DataGetter<Album> albumGetter;
+    private final DataGetter<Photo> photoGetter;
 
-    public AlbumAnalyzer(TimeBombCache<Album> albumCache, TimeBombCache<Photo> photoCache) {
-        this.albumCache = albumCache;
-        this.photoCache = photoCache;
+    public AlbumAnalyzer(DataGetter<Album> albumGetter, DataGetter<Photo> photoGetter) {
+        this.albumGetter = albumGetter;
+        this.photoGetter = photoGetter;
     }
 
     private static boolean numberOfPhotosIsAcceptable(Integer numberOfPhotos, int threshold) {
@@ -25,10 +25,10 @@ public class AlbumAnalyzer {
 
     public CompletableFuture<Collection<String>> userAlbums(int userId, int photosThreshold) {
         CompletableFuture<Map<Integer, Integer>> numberOfPhotosPerAlbum = CompletableFuture
-                .supplyAsync(photoCache::getData)
+                .supplyAsync(photoGetter::getData)
                 .thenApply(data -> data.stream()
                         .collect(Collectors.toMap(Photo::getAlbumId, photo -> 1, Integer::sum)));
-        return CompletableFuture.supplyAsync(albumCache::getData)
+        return CompletableFuture.supplyAsync(albumGetter::getData)
                 .thenCombine(numberOfPhotosPerAlbum, (albums, photos) -> albums.stream()
                         .filter(a -> a.getUserId() == userId)
                         .filter(a -> numberOfPhotosIsAcceptable(photos.get(a.getId()), photosThreshold))
