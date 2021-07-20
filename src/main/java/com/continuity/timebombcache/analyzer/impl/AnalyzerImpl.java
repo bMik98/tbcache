@@ -7,20 +7,22 @@ import com.continuity.timebombcache.model.*;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 
-public class SimpleAnalyzer implements Analyzer {
+public class AnalyzerImpl implements Analyzer {
 
     private final TodoAnalyzer todoAnalyzer;
     private final PostAnalyzer postAnalyzer;
+    private final AlbumAnalyzer albumAnalyzer;
 
-    public SimpleAnalyzer(
+    public AnalyzerImpl(
             TimeBombCache<Album> albumCache,
             TimeBombCache<Comment> commentCache,
             TimeBombCache<Photo> photoCache,
             TimeBombCache<Post> postCache,
             TimeBombCache<Todo> todoCache,
             TimeBombCache<User> userCache) {
-        todoAnalyzer = new TodoAnalyzer(todoCache);
-        postAnalyzer = new PostAnalyzer(commentCache, postCache);
+        this.todoAnalyzer = new TodoAnalyzer(todoCache);
+        this.postAnalyzer = new PostAnalyzer(commentCache, postCache);
+        this.albumAnalyzer = new AlbumAnalyzer(albumCache, photoCache);
     }
 
     @Override
@@ -60,7 +62,14 @@ public class SimpleAnalyzer implements Analyzer {
     }
 
     @Override
-    public Collection<String> userAlbums(int userId, int albumPhotosThreshold) {
-        return null;
+    public Collection<String> userAlbums(int userId, int photosThreshold) {
+        try {
+            return albumAnalyzer.userAlbums(userId, photosThreshold).get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        throw new RuntimeException();
     }
 }

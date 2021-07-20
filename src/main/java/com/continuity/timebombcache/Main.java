@@ -1,7 +1,7 @@
 package com.continuity.timebombcache;
 
 import com.continuity.timebombcache.analyzer.Analyzer;
-import com.continuity.timebombcache.analyzer.impl.SimpleAnalyzer;
+import com.continuity.timebombcache.analyzer.impl.AnalyzerImpl;
 import com.continuity.timebombcache.cache.TimeBombCache;
 import com.continuity.timebombcache.cache.impl.*;
 import com.continuity.timebombcache.model.*;
@@ -62,7 +62,7 @@ public class Main {
     private final TimeBombCache<Todo> todoCache = new TodoTimeBombCache(todoClient, TTL_IN_SECONDS);
     private final TimeBombCache<User> userCache = new UserTimeBombCache(userClient, TTL_IN_SECONDS);
 
-    private final Analyzer analyzer = new SimpleAnalyzer(
+    private final Analyzer analyzer = new AnalyzerImpl(
             albumCache, commentCache, photoCache, postCache, todoCache, userCache);
 
     private final AtomicInteger getCounter = new AtomicInteger(0);
@@ -89,7 +89,8 @@ public class Main {
         try {
 //            new Main().start();
 //            new Main().testTodoAnalyze();
-            new Main().testPostCommentsAnalyze();
+//            new Main().testPostCommentsAnalyze();
+            new Main().testAlbumAnalyze();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -114,6 +115,16 @@ public class Main {
         analyzer.userPostReplies().forEach(System.out::println);
         System.out.println("--------------------------------");
         analyzer.userPostReplies().forEach(System.out::println);
+        System.out.println("--------------------------------");
+    }
+
+    private void testAlbumAnalyze() {
+        System.out.println("--------------------------------");
+        analyzer.userAlbums(1, 0).forEach(System.out::println);
+        System.out.println("--------------------------------");
+        analyzer.userAlbums(2, 0).forEach(System.out::println);
+        System.out.println("--------------------------------");
+        analyzer.userAlbums(3, 0).forEach(System.out::println);
         System.out.println("--------------------------------");
     }
 

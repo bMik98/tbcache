@@ -10,5 +10,5 @@ public interface Analyzer {
 
     Collection<String> userPostReplies();
 
-    Collection<String> userAlbums(int userId, int albumPhotosThreshold);
+    Collection<String> userAlbums(int userId, int photosThreshold);
 }
