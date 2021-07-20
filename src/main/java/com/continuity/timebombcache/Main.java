@@ -4,9 +4,13 @@ import com.continuity.timebombcache.analyzer.Analyzer;
 import com.continuity.timebombcache.analyzer.impl.AnalyzerImpl;
 import com.continuity.timebombcache.cache.TimeBombCache;
 import com.continuity.timebombcache.cache.impl.*;
-import com.continuity.timebombcache.model.*;
+import com.continuity.timebombcache.service.CleanManager;
+import com.continuity.timebombcache.service.CyclicService;
+import com.continuity.timebombcache.model.Clearable;
+import com.continuity.timebombcache.model.entity.*;
 import com.continuity.timebombcache.rest.impl.DelayingRestApiClient;
 import com.continuity.timebombcache.util.Stopper;
+import com.continuity.timebombcache.util.impl.FixedDelayStopper;
 import com.continuity.timebombcache.util.impl.JacksonJsonConverter;
 import com.continuity.timebombcache.util.impl.RandomDelayStopper;
 
@@ -62,6 +66,11 @@ public class Main {
     private final TimeBombCache<Todo> todoCache = new TodoTimeBombCache(todoClient, TTL_IN_SECONDS);
     private final TimeBombCache<User> userCache = new UserTimeBombCache(userClient, TTL_IN_SECONDS);
 
+    private final Collection<Clearable> caches = Arrays.asList(
+            albumCache, commentCache, photoCache, postCache, todoCache, userCache);
+
+    private final CyclicService cleanService = new CleanManager(caches, 1, 5);
+
     private final Analyzer analyzer = new AnalyzerImpl(
             albumCache, commentCache, photoCache, postCache, todoCache, userCache);
 
@@ -90,7 +99,8 @@ public class Main {
 //            new Main().start();
 //            new Main().testTodoAnalyze();
 //            new Main().testPostCommentsAnalyze();
-            new Main().testAlbumAnalyze();
+//            new Main().testAlbumAnalyze();
+            new Main().testCleanService();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -126,6 +136,19 @@ public class Main {
         System.out.println("--------------------------------");
         analyzer.userAlbums(3, 0).forEach(System.out::println);
         System.out.println("--------------------------------");
+    }
+
+    private void testCleanService() {
+        System.out.println(cleanService.isRunning());
+        cleanService.startCyclicClean();
+        System.out.println(cleanService.isRunning());
+        new FixedDelayStopper(10).delay();
+        cleanService.shutdown();
+        System.out.println(cleanService.isRunning());
+        cleanService.startCyclicClean();
+        new FixedDelayStopper(10).delay();
+        cleanService.shutdown();
+
     }
 
     private void start() throws InterruptedException {

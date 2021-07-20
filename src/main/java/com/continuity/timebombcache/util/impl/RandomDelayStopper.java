@@ -1,26 +1,22 @@
 package com.continuity.timebombcache.util.impl;
 
+import com.continuity.timebombcache.model.IntRange;
 import com.continuity.timebombcache.util.Stopper;
 
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class RandomDelayStopper implements Stopper {
 
-    private final int minDelayInSeconds;
-    private final int maxDelayInSeconds;
-    private final Random random = new Random();
+    private final IntRange range;
 
     public RandomDelayStopper(int minDelayInSeconds, int maxDelayInSeconds) {
-        this.minDelayInSeconds = minDelayInSeconds;
-        this.maxDelayInSeconds = maxDelayInSeconds;
+        this.range = new IntRange(minDelayInSeconds, maxDelayInSeconds);
     }
 
     @Override
     public void delay() {
-        int sleepDelay = random.nextInt(maxDelayInSeconds - minDelayInSeconds) + minDelayInSeconds;
         try {
-            TimeUnit.SECONDS.sleep(sleepDelay);
+            TimeUnit.SECONDS.sleep(range.nextRandom());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

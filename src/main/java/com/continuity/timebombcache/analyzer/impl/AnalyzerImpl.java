@@ -1,8 +1,8 @@
 package com.continuity.timebombcache.analyzer.impl;
 
 import com.continuity.timebombcache.analyzer.Analyzer;
-import com.continuity.timebombcache.cache.TimeBombCache;
-import com.continuity.timebombcache.model.*;
+import com.continuity.timebombcache.model.DataGetter;
+import com.continuity.timebombcache.model.entity.*;
 
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
@@ -14,15 +14,15 @@ public class AnalyzerImpl implements Analyzer {
     private final AlbumAnalyzer albumAnalyzer;
 
     public AnalyzerImpl(
-            TimeBombCache<Album> albumCache,
-            TimeBombCache<Comment> commentCache,
-            TimeBombCache<Photo> photoCache,
-            TimeBombCache<Post> postCache,
-            TimeBombCache<Todo> todoCache,
-            TimeBombCache<User> userCache) {
-        this.todoAnalyzer = new TodoAnalyzer(todoCache);
-        this.postAnalyzer = new PostAnalyzer(commentCache, postCache);
-        this.albumAnalyzer = new AlbumAnalyzer(albumCache, photoCache);
+            DataGetter<Album> albumGetter,
+            DataGetter<Comment> commentGetter,
+            DataGetter<Photo> photoGetter,
+            DataGetter<Post> postGetter,
+            DataGetter<Todo> todoGetter,
+            DataGetter<User> userGetter) {
+        this.todoAnalyzer = new TodoAnalyzer(todoGetter);
+        this.postAnalyzer = new PostAnalyzer(commentGetter, postGetter);
+        this.albumAnalyzer = new AlbumAnalyzer(albumGetter, photoGetter);
     }
 
     @Override

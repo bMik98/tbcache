@@ -1,4 +1,6 @@
-package com.continuity.timebombcache.model;
+package com.continuity.timebombcache.model.entity;
+
+import com.continuity.timebombcache.model.HasIntegerId;
 
 public class Comment implements HasIntegerId {
 

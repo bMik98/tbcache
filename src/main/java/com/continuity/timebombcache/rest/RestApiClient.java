@@ -1,8 +1,6 @@
 package com.continuity.timebombcache.rest;
 
-import java.util.Collection;
+import com.continuity.timebombcache.model.DataGetter;
 
-public interface RestApiClient<T> {
-
-    Collection<T> getData();
+public interface RestApiClient<T> extends DataGetter<T> {
 }

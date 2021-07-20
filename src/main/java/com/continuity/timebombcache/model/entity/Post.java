@@ -1,12 +1,15 @@
-package com.continuity.timebombcache.model;
+package com.continuity.timebombcache.model.entity;
 
-public class Album implements HasIntegerId {
+import com.continuity.timebombcache.model.HasIntegerId;
+
+public class Post implements HasIntegerId {
 
     private int id;
     private int userId;
     private String title;
+    private String body;
 
-    public Album() {
+    public Post() {
     }
 
     @Override
@@ -32,5 +35,13 @@ public class Album implements HasIntegerId {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getBody() {
+        return body;
+    }
+
+    public void setBody(String body) {
+        this.body = body;
     }
 }

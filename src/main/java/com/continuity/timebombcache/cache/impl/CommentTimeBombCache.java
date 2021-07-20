@@ -1,7 +1,7 @@
 package com.continuity.timebombcache.cache.impl;
 
 import com.continuity.timebombcache.cache.AbstractTimeBombCache;
-import com.continuity.timebombcache.model.Comment;
+import com.continuity.timebombcache.model.entity.Comment;
 import com.continuity.timebombcache.rest.RestApiClient;
 
 public class CommentTimeBombCache extends AbstractTimeBombCache<Comment> {

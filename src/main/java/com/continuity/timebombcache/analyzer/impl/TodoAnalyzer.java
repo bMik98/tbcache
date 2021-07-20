@@ -1,7 +1,7 @@
 package com.continuity.timebombcache.analyzer.impl;
 
-import com.continuity.timebombcache.cache.TimeBombCache;
-import com.continuity.timebombcache.model.Todo;
+import com.continuity.timebombcache.model.DataGetter;
+import com.continuity.timebombcache.model.entity.Todo;
 
 import java.util.Collection;
 import java.util.Map;
@@ -17,14 +17,14 @@ public class TodoAnalyzer {
     private static final Function<Todo, String> todoToString = todo ->
             "Todo #" + todo.getId() + " " + todo.getTitle();
 
-    private final TimeBombCache<Todo> todoCache;
+    private final DataGetter<Todo> todoGetter;
 
-    public TodoAnalyzer(TimeBombCache<Todo> todoCache) {
-        this.todoCache = todoCache;
+    public TodoAnalyzer(DataGetter<Todo> todoGetter) {
+        this.todoGetter = todoGetter;
     }
 
     public CompletableFuture<Collection<String>> uncompletedTasks() {
-        return CompletableFuture.supplyAsync(todoCache::getData)
+        return CompletableFuture.supplyAsync(todoGetter::getData)
                 .thenApply(data -> data.stream()
                         .filter(todo -> !todo.isCompleted())
                         .collect(Collectors.toMap(Todo::getUserId, todo -> 1, Integer::sum)))
@@ -34,7 +34,7 @@ public class TodoAnalyzer {
     }
 
     public CompletableFuture<Collection<String>> uncompletedUserTasks(int userId) {
-        return CompletableFuture.supplyAsync(todoCache::getData)
+        return CompletableFuture.supplyAsync(todoGetter::getData)
                 .thenApply(data -> data.stream()
                         .filter(todo -> todo.getUserId() == userId)
                         .filter(todo -> !todo.isCompleted())
