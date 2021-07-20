@@ -4,11 +4,12 @@ import com.continuity.timebombcache.analyzer.Analyzer;
 import com.continuity.timebombcache.analyzer.impl.AnalyzerImpl;
 import com.continuity.timebombcache.cache.TimeBombCache;
 import com.continuity.timebombcache.cache.impl.*;
-import com.continuity.timebombcache.service.CleanManager;
-import com.continuity.timebombcache.service.CyclicService;
 import com.continuity.timebombcache.model.Clearable;
 import com.continuity.timebombcache.model.entity.*;
 import com.continuity.timebombcache.rest.impl.DelayingRestApiClient;
+import com.continuity.timebombcache.service.CleanManager;
+import com.continuity.timebombcache.service.CyclicService;
+import com.continuity.timebombcache.service.EventManager;
 import com.continuity.timebombcache.util.Stopper;
 import com.continuity.timebombcache.util.impl.FixedDelayStopper;
 import com.continuity.timebombcache.util.impl.JacksonJsonConverter;
@@ -29,10 +30,12 @@ import java.util.logging.Logger;
 public class Main {
     private static final Logger LOGGER = Logger.getLogger(Main.class.getSimpleName());
 
-    private static final int TTL_IN_SECONDS = 5;
+    private static final int TTL_IN_SECS = 5;
     private static final int MIN_DELAY = 2;
     private static final int MAX_DELAY = 6;
     private static final Stopper apiDelayStopper = new RandomDelayStopper(MIN_DELAY, MAX_DELAY);
+
+    private final EventManager eventManager = new EventManager(1, 5);
 
     private final DelayingRestApiClient<Album> albumClient = new DelayingRestApiClient<>(
             new URL("https://jsonplaceholder.typicode.com/albums"),
@@ -59,12 +62,12 @@ public class Main {
             new JacksonJsonConverter<>(User.class),
             apiDelayStopper);
 
-    private final TimeBombCache<Album> albumCache = new AlbumTimeBombCache(albumClient, TTL_IN_SECONDS);
-    private final TimeBombCache<Comment> commentCache = new CommentTimeBombCache(commentClient, TTL_IN_SECONDS);
-    private final TimeBombCache<Photo> photoCache = new PhotoTimeBombCache(photoClient, TTL_IN_SECONDS);
-    private final TimeBombCache<Post> postCache = new PostTimeBombCache(postClient, TTL_IN_SECONDS);
-    private final TimeBombCache<Todo> todoCache = new TodoTimeBombCache(todoClient, TTL_IN_SECONDS);
-    private final TimeBombCache<User> userCache = new UserTimeBombCache(userClient, TTL_IN_SECONDS);
+    private final TimeBombCache<Album> albumCache = new AlbumTimeBombCache(albumClient, TTL_IN_SECS, eventManager);
+    private final TimeBombCache<Comment> commentCache = new CommentTimeBombCache(commentClient, TTL_IN_SECS, eventManager);
+    private final TimeBombCache<Photo> photoCache = new PhotoTimeBombCache(photoClient, TTL_IN_SECS, eventManager);
+    private final TimeBombCache<Post> postCache = new PostTimeBombCache(postClient, TTL_IN_SECS, eventManager);
+    private final TimeBombCache<Todo> todoCache = new TodoTimeBombCache(todoClient, TTL_IN_SECS, eventManager);
+    private final TimeBombCache<User> userCache = new UserTimeBombCache(userClient, TTL_IN_SECS, eventManager);
 
     private final Collection<Clearable> caches = Arrays.asList(
             albumCache, commentCache, photoCache, postCache, todoCache, userCache);
@@ -96,11 +99,12 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-//            new Main().start();
+            new Main().start();
 //            new Main().testTodoAnalyze();
 //            new Main().testPostCommentsAnalyze();
 //            new Main().testAlbumAnalyze();
-            new Main().testCleanService();
+//            new Main().testCleanService();
+//            new Main().testEventManager();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -149,6 +153,18 @@ public class Main {
         new FixedDelayStopper(10).delay();
         cleanService.shutdown();
 
+    }
+
+    private void testEventManager() {
+        System.out.println(eventManager.isRunning());
+        eventManager.startCyclicClean();
+        System.out.println(eventManager.isRunning());
+        new FixedDelayStopper(10).delay();
+        eventManager.shutdown();
+        System.out.println(eventManager.isRunning());
+        eventManager.startCyclicClean();
+        new FixedDelayStopper(10).delay();
+        eventManager.shutdown();
     }
 
     private void start() throws InterruptedException {
